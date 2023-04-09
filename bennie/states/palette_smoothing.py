@@ -11,7 +11,7 @@ from bennie.draw import draw_cell
 WHITE = pygame.Color('white')
 
 
-class Rerender(GameState):
+class PaletteSmoothing(GameState):
     def __init__(self, persist):
         super().__init__(persist)
 
@@ -34,9 +34,18 @@ class Rerender(GameState):
         self._draw()
         pygame.display.flip()
 
+        min_i = self.persist.maxdepth
+        max_i = 0
+
+        for x, y, cell in self.persist.cache:
+            for row in cell:
+                for i, _ in row:
+                    min_i = min(min_i, i)
+                    max_i = max(max_i, i)
+
         for x, y, cell in self.persist.cache:
             r = pygame.Rect(x, y, self.persist.cellsize, self.persist.cellsize)
-            surf = draw_cell(r, cell, self.persist.palette, self.persist.maxdepth)
+            surf = draw_cell(r, cell, self.persist.palette, self.persist.maxdepth, min_i, max_i)
             canvas.blit(surf, r)
             for e in pygame.event.get():
                 self.dispatch_event(e)

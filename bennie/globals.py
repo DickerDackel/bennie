@@ -10,7 +10,7 @@ X1, Y1 = 1, 1.5
 MAXDEPTH = 50
 CELLSIZE = 16
 
-DEFAULT_PALETTE = 'greyscale'
+DEFAULT_PALETTE = '00-greyscale'
 
 THREADS = 10
 
@@ -19,6 +19,7 @@ class States(Enum):
     RENDER = auto()
     RERENDER = auto()
     SHARPEN = auto()
+    PALETTE_SMOOTHING = auto()
     SELECT_FRAME = auto()
     MENU = auto()
     DEMO = auto()
@@ -33,6 +34,7 @@ persist = SimpleNamespace(
     maxdepth=MAXDEPTH,
     old_maxdepth=MAXDEPTH,
     palettes=None,
+    palette_idx=None,
     palette=None,
     colors=0,
     frame=(X0, Y0, X1, Y1),

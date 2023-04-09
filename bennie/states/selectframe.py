@@ -7,9 +7,7 @@ from cooldown import Cooldown
 from pygamehelpers import GameState
 
 from bennie.globals import X0, Y0, X1, Y1, MAXDEPTH, CELLSIZE, DEFAULT_PALETTE, States
-
-
-a2b = lambda a, b, x: x * b / a
+from bennie.utils import a2b
 
 
 class Mode(Enum):
@@ -81,9 +79,12 @@ class SelectFrame(GameState):
             case pygame.KEYDOWN:
                 match e.key:
                     case pygame.K_p:
-                        self.persist.palette = choice(list(self.persist.palettes.values()))
-                        self.persist.colors = len(self.persist.palette)
-                        self.next_state = States.RERENDER
+                        if e.mod == 1 or e.mod == 2:
+                            self.next_state = States.PALETTE_SMOOTHING
+                        else:
+                            self.persist.palette = self.persist.palettes[next(self.persist.palette_idx)]
+                            self.persist.colors = len(self.persist.palette)
+                            self.next_state = States.RERENDER
                     case pygame.K_s:
                         self.persist.old_maxdepth = self.persist.maxdepth
                         self.persist.maxdepth *= 2
