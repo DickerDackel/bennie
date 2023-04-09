@@ -2,7 +2,7 @@ import json
 import importlib.resources
 from os.path import basename, splitext
 
-palette = {}
+palettes = {}
 
 print(__name__)
 package = 'bennie.palettes'
@@ -12,4 +12,4 @@ for fname in importlib.resources.contents(package):
 
     name = splitext(basename(fname))[0]
     data = importlib.resources.files(package).joinpath(fname).read_text()
-    palette[name] = json.loads(data)
+    palettes[name] = json.loads(data)

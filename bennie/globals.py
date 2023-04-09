@@ -17,6 +17,8 @@ THREADS = 10
 
 class States(Enum):
     RENDER = auto()
+    RERENDER = auto()
+    SHARPEN = auto()
     SELECT_FRAME = auto()
     MENU = auto()
     DEMO = auto()
@@ -29,7 +31,10 @@ persist = SimpleNamespace(
     fps=FPS,
     rect=None,
     maxdepth=MAXDEPTH,
+    old_maxdepth=MAXDEPTH,
+    palettes=None,
     palette=None,
+    colors=0,
     frame=(X0, Y0, X1, Y1),
     cellsize=CELLSIZE,
 )

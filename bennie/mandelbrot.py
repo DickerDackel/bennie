@@ -1,22 +1,25 @@
-def iterate(c, maxdepth):
-    z = complex(0.0, 0.0)
-    for i in range(maxdepth):
-        z = z * z + c
+def iterate(c, maxdepth, i0=0, z0=complex(0.0, 0.0)):
+    z = z0
+    for i in range(i0, maxdepth):
         if abs(z) > 2:
-            return i
-    return maxdepth
+            return i, z
+        z = z * z + c
 
+    return i+1, z
 
-def process_cell(x0, y0, dx, dy, steps_x, steps_y, maxdepth):
+def process_cell(x0, y0, w, h, maxdepth, steps, cache=None):
     cell = []
     cy = y0
-    for y in range(steps_y):
+    for y in range(steps):
         row = []
         cx = x0
-        for x in range(steps_x):
-            row.append(iterate(complex(cx, cy), maxdepth))
-            cx += dx
+        for x in range(steps):
+            if cache:
+                row.append(iterate(complex(cx, cy), maxdepth, *cache[y][x]))
+            else:
+                row.append(iterate(complex(cx, cy), maxdepth))
+            cx += w
         cell.append(row)
-        cy += dy
+        cy += h
 
     return cell

@@ -6,7 +6,7 @@ from random import choice
 from cooldown import Cooldown
 from pygamehelpers import GameState
 
-from bennie.globals import States
+from bennie.globals import X0, Y0, X1, Y1, MAXDEPTH, CELLSIZE, DEFAULT_PALETTE, States
 
 
 a2b = lambda a, b, x: x * b / a
@@ -18,6 +18,7 @@ class Mode(Enum):
     SELECTED = auto()
     CONFIRM = auto()
     CONFIRMED = auto()
+
 
 class SelectFrame(GameState):
     def __init__(self, persist):
@@ -33,14 +34,20 @@ class SelectFrame(GameState):
 
         self.font = pygame.Font(None, 14)
 
-        self.reset()
-
     def reset(self, persist=None):
         super().reset(persist)
         self.crosshair = self.persist.rect.center
         self.crosshair_cooldown.reset()
         self.selection = self.persist.rect.copy()
         self.mode = Mode.CROSSHAIR
+
+    def reset_hard(self):
+        self.persist.frame = (X0, Y0, X1, Y1)
+        self.persist.maxdepth = MAXDEPTH
+        self.persist.cellsize = CELLSIZE
+
+        self.persist.palette = self.persist.palettes[DEFAULT_PALETTE]
+        self.persist.colors = len(self.persist.palette)
 
     def dispatch_event(self, e):
         super().dispatch_event(e)
@@ -61,21 +68,29 @@ class SelectFrame(GameState):
                             self.mode = Mode.CROSSHAIR
                     elif self.mode == Mode.CROSSHAIR:
                         self.mode = Mode.DRAGGING
-                        self.drag_to = e.pos
                         self.selection.width = self.selection.height = 1
+                        self.selection.center = self.drag_to = e.pos
                 elif e.button == 3:
                     self.mode = Mode.CROSSHAIR
-                self.selection.center = e.pos
+                    self.selection.center = e.pos
 
             case pygame.MOUSEBUTTONUP:
                 if self.mode == Mode.DRAGGING and e.button == 1:
                     self.mode = Mode.SELECTED
 
             case pygame.KEYDOWN:
-                if e.key == pygame.K_p:
-                    self.persist.palette = choice(list(self.persist.palettes.values()))
-                    self.persist.colors = len(self.persist.palette)
-                    self.next_state = States.RENDER
+                match e.key:
+                    case pygame.K_p:
+                        self.persist.palette = choice(list(self.persist.palettes.values()))
+                        self.persist.colors = len(self.persist.palette)
+                        self.next_state = States.RERENDER
+                    case pygame.K_s:
+                        self.persist.old_maxdepth = self.persist.maxdepth
+                        self.persist.maxdepth *= 2
+                        self.next_state = States.SHARPEN
+                    case pygame.K_r:
+                        self.reset_hard()
+                        self.next_state = States.RENDER
 
     def screen2frame(self, rect):
         fx0, fy0 = self.persist.frame[0:2]
@@ -114,9 +129,7 @@ class SelectFrame(GameState):
                 self.selection.center = center
 
             case Mode.SELECTED:
-                print(f'before: {self.selection}')
                 self.selection.clamp_ip(self.persist.rect)
-                print(f'after: {self.selection}')
                 self.inverse = pygame.transform.invert(self.persist.canvas.subsurface(self.selection))
                 self.mode = Mode.CONFIRM
 
@@ -129,7 +142,6 @@ class SelectFrame(GameState):
                 self.next_state = States.RENDER
 
                 self.persist.frame = self.screen2frame(self.selection)
-                print(f'Selection: {self.selection.center, self.selection.size} - {self.persist.frame}')
                 self.next_state = States.RENDER
 
     def draw(self, screen):

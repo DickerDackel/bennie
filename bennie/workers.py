@@ -17,8 +17,8 @@ def worker():
             celldef = qi.get(timeout=1)
         except queue.Empty:
             continue
-        x, y, cx, cy, dx, dy, size, maxdepth = celldef
-        cell = process_cell(cx, cy, dx, dy, size, size, maxdepth)
+        x, y, *process_parms = celldef
+        cell = process_cell(*process_parms)
         qo.put((x, y, cell))
         qi.task_done()
 

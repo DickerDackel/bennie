@@ -4,31 +4,14 @@ import pygame
 
 from pygamehelpers import GameState
 
-from bennie.globals import States
+from bennie.globals import X0, Y0, X1, Y1, MAXDEPTH, CELLSIZE, DEFAULT_PALETTE, States
 from bennie.draw import draw_cell
+from .render import create_orders
 
 WHITE = pygame.Color('white')
 
 
-def create_orders(x0, y0, x1, y1, maxdepth, cellsize, rect, shuffle=True):
-    w = (x1 - x0) / rect.width
-    h = (y1 - y0) / rect.height
-
-    orders = [(x, y,
-               x0 + x * w, y0 + y * h,
-               w, h,
-               maxdepth,
-               cellsize)
-              for y in range(0, rect.width, cellsize)
-              for x in range(0, rect.height, cellsize)]
-
-    if shuffle:
-        random.shuffle(orders)
-
-    return orders
-
-
-class Render(GameState):
+class Sharpen(GameState):
     def __init__(self, persist):
         super().__init__(persist)
 
@@ -54,17 +37,38 @@ class Render(GameState):
         self._draw()
         pygame.display.flip()
 
-        orders = create_orders(*self.persist.frame, self.persist.maxdepth,
-                               self.persist.cellsize, self.persist.rect,
-                               shuffle=True)
-        for o in orders:
-            self.qi.put(o)
 
-            # FIXME debugging
-            x, y = o[0:2]
-            pygame.draw.rect(canvas, pygame.Color('red'),
-                             (x, y, self.persist.cellsize + 1, self.persist.cellsize + 1),
-                             width=1)
+        def reorder_cache(cache, x0, y0, x1, y1, maxdepth, cellsize, rect, shuffle=True):
+            dx = (x1 - x0) / rect.width
+            dy = (y1 - y0) / rect.height
+
+            return [(x, y, x0 + x * dx, y0 + y * dy, dx, dy, maxdepth, cellsize, cell)
+                    for x, y, cell in cache]
+
+        orders = reorder_cache(self.persist.cache, *self.persist.frame,
+                               self.persist.maxdepth, self.persist.cellsize,
+                               self.persist.rect, shuffle=True)
+
+        def has_black(cell, maxdepth):
+            for row in cell:
+                for i, z in row:
+                    if i == maxdepth and abs(z) <= 2:
+                        return True
+            return False
+
+        for o, c in zip(orders, self.persist.cache):
+            x, y, cell = c
+            if has_black(cell, self.persist.old_maxdepth):
+                self.qi.put(o)
+                pygame.draw.rect(canvas, pygame.Color('red'),
+                                 (x, y, self.persist.cellsize + 1, self.persist.cellsize + 1),
+                                 width=1)
+            else:
+                self.qo.put(c)
+                pygame.draw.rect(canvas, pygame.Color('green'),
+                                 (x, y, self.persist.cellsize + 1, self.persist.cellsize + 1),
+                                 width=1)
+
 
         self.persist.cache = []
         todo = len(orders)
